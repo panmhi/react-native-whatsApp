@@ -44,6 +44,7 @@ export const searchUsers = async (queryText) => {
 			endAt(searchTerm + '\uf8ff')
 		);
 
+		// Query result will be an object of users
 		const snapshot = await get(queryRef);
 
 		if (snapshot.exists()) {

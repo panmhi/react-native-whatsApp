@@ -7,4 +7,5 @@ export default {
 	textColor: '#1c1e21',
 	primary: '#32d48e',
 	red: '#e74c3c',
+	beige: '#FEF5C3',
 };

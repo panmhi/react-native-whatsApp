@@ -61,7 +61,7 @@ const ProfileImage = (props) => {
 	};
 
 	// Clickable if showEditButton is true
-	// View component doesn't have onPress prop
+	// NOT TYPE SAFE: View component doesn't have onPress prop
 	const Container = showEditButton ? TouchableOpacity : View;
 
 	return (

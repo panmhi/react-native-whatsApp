@@ -12,16 +12,55 @@ import { Feather } from '@expo/vector-icons';
 
 import backgroundImage from '../assets/images/droplet.jpeg';
 import colors from '../constants/colors';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import PageContainer from '../components/PageContainer';
+import Bubble from '../components/Bubble';
+import { useSelector } from 'react-redux';
+import { createChat } from '../utils/actions/chatActions';
 
 const ChatScreen = (props) => {
+	const userData = useSelector((state) => state.auth.userData);
+	const storedUsers = useSelector((state) => state.users.storedUsers);
+	const [chatUsers, setChatUsers] = useState([]);
 	const [messageText, setMessageText] = useState('');
+	const [chatId, setChatId] = useState(props.route?.params?.chatId);
 
-	const sendMessage = useCallback(() => {
+	// newChatData: { users: [userId1, userId2] }
+	const chatData = props.route?.params?.newChatData;
+
+	// Get the other user's name
+	const getChatTitleFromName = () => {
+		const otherUserId = chatUsers.find((uid) => uid !== userData.userId);
+		const otherUserData = storedUsers[otherUserId];
+
+		return (
+			otherUserData && `${otherUserData.firstName} ${otherUserData.lastName}`
+		);
+	};
+
+	// Store chat messages in the database
+	const sendMessage = useCallback(async () => {
+		try {
+			let id = chatId;
+			if (!id) {
+				// No chat Id. Create the chat
+				// newChatData: { users: [userId1, userId2] }
+				id = await createChat(userData.userId, props.route.params.newChatData);
+				setChatId(id);
+			}
+		} catch (error) {}
+
 		setMessageText('');
-	}, [messageText]);
+	}, [messageText, chatId]);
 
-	const handleOnPress = () => {};
+	// Display the other user's name to the header
+	useEffect(() => {
+		props.navigation.setOptions({
+			headerTitle: getChatTitleFromName(),
+		});
+		setChatUsers(chatData.users); // TODO -> BUG
+	}, [chatUsers]);
+
 	return (
 		<SafeAreaView edges={['right', 'bottom', 'left']} style={styles.container}>
 			<KeyboardAvoidingView
@@ -32,10 +71,20 @@ const ChatScreen = (props) => {
 				<ImageBackground
 					source={backgroundImage}
 					style={styles.backgroundImage}
-				></ImageBackground>
+				>
+					{/* Display new chat message bubble on the top if chatId is null */}
+					<PageContainer style={{ backgroundColor: 'transparent' }}>
+						{!chatId && (
+							<Bubble text='This is a new chat. Say hi!' type='system' />
+						)}
+					</PageContainer>
+				</ImageBackground>
 
 				<View style={styles.inputContainer}>
-					<TouchableOpacity style={styles.mediaButton} onPress={handleOnPress}>
+					<TouchableOpacity
+						style={styles.mediaButton}
+						onPress={() => console.log('Pressed!')}
+					>
 						<Feather name='plus' size={24} color={colors.blue} />
 					</TouchableOpacity>
 

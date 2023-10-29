@@ -3,7 +3,6 @@ import {
 	View,
 	Text,
 	StyleSheet,
-	Button,
 	TextInput,
 	ActivityIndicator,
 	FlatList,
@@ -16,14 +15,21 @@ import colors from '../constants/colors';
 import commonStyles from '../constants/commonStyles';
 import { searchUsers } from '../utils/actions/userActions';
 import DataItem from '../components/DataItem';
+import { useDispatch, useSelector } from 'react-redux';
+import { setStoredUsers } from '../store/userSlice';
 
 const NewChatScreen = (props) => {
+	const dispatch = useDispatch();
+
 	const [isLoading, setIsLoading] = useState(false);
 	// Users array
 	const [users, setUsers] = useState();
 	const [noResultsFound, setNoResultsFound] = useState(false);
 	const [searchTerm, setSearchTerm] = useState('');
 
+	const userData = useSelector((state) => state.auth.userData);
+
+	// Add Close button to the header
 	useEffect(() => {
 		props.navigation.setOptions({
 			headerLeft: () => {
@@ -37,6 +43,7 @@ const NewChatScreen = (props) => {
 		});
 	}, []);
 
+	// Search for users in the database
 	useEffect(() => {
 		const delaySearch = setTimeout(async () => {
 			// If searchTerm is null or empty string
@@ -51,11 +58,21 @@ const NewChatScreen = (props) => {
 			// Search for users in the database
 			// usersResult is a object of users, could be empty object if no user found
 			const usersResult = await searchUsers(searchTerm);
+
+			// Delete the logged in user from the usersResult so that result list does not show the logged in user
+			delete usersResult[userData.userId];
+
 			setUsers(usersResult);
+
 			if (Object.keys(usersResult).length === 0) {
 				setNoResultsFound(true);
 			} else {
 				setNoResultsFound(false);
+				/* 
+                    Save the usersResult to redux users store.
+                    So that we don't need to fetch to get those users info again
+                */
+				dispatch(setStoredUsers({ newUsers: usersResult }));
 			}
 
 			setIsLoading(false);
@@ -64,6 +81,14 @@ const NewChatScreen = (props) => {
 		// Cleanup previous timeout when searchTerm changes
 		return () => clearTimeout(delaySearch);
 	}, [searchTerm]);
+
+	// Navigate to ChatListScreen when a user is selected
+	// Need to pass the selected user id to ChatListScreen
+	const userPressed = (userId) => {
+		props.navigation.navigate('ChatList', {
+			selectedUserId: userId,
+		});
+	};
 
 	return (
 		<PageContainer>
@@ -97,6 +122,7 @@ const NewChatScreen = (props) => {
 								title={`${userData.firstName} ${userData.lastName}`}
 								subTitle={userData.about}
 								image={userData.profilePicture}
+								onPress={() => userPressed(userId)}
 							/>
 						);
 					}}
