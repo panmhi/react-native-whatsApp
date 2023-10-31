@@ -60,6 +60,18 @@ export const createChat = async (loggedInUserId, chatData) => {
 	return newChat.key;
 };
 
+export const updateChatData = async (chatId, userId, chatData) => {
+	const app = getFirebaseApp();
+	const dbRef = ref(getDatabase(app));
+	const chatRef = child(dbRef, `chats/${chatId}`);
+
+	await update(chatRef, {
+		...chatData,
+		updatedAt: new Date().toISOString(),
+		updatedBy: userId,
+	});
+};
+
 // Add new message to messages database
 // Update chat updated time and latestMessageText in the chats database
 const sendMessage = async (
