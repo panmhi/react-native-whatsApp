@@ -16,6 +16,7 @@ import { ActivityIndicator, View } from 'react-native';
 import colors from '../constants/colors';
 import commonStyles from '../constants/commonStyles';
 import { setStoredUsers } from '../store/userSlice';
+import { setChatMessages, setStarredMessages } from '../store/messagesSlice';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -97,6 +98,8 @@ const MainNavigator = (props) => {
 		const userChatsRef = child(dbRef, `userChats/${userData.userId}`);
 		const refs = [userChatsRef];
 
+		// Listen to logged in user's userChat data in database
+		// Get relevant chats and users data based on userChat data and save to redux store
 		onValue(userChatsRef, (querySnapshot) => {
 			const chatIdsData = querySnapshot.val() || {};
 			const chatIds = Object.values(chatIdsData); // Array of chatIds
@@ -144,10 +147,31 @@ const MainNavigator = (props) => {
 					}
 				});
 
+				// Fetch messages associated with each chat
+				const messagesRef = child(dbRef, `messages/${chatId}`);
+				refs.push(messagesRef);
+				onValue(messagesRef, (messagesSnapshot) => {
+					const messagesData = messagesSnapshot.val();
+					// Save messages data to redux messages store
+					dispatch(setChatMessages({ chatId, messagesData }));
+				});
+
 				if (chatsFoundCount == 0) {
 					setIsLoading(false);
 				}
 			}
+		});
+
+		// Listen to logged in user's starred messages
+		const userStarredMessagesRef = child(
+			dbRef,
+			`userStarredMessages/${userData.userId}`
+		);
+		refs.push(userStarredMessagesRef);
+		onValue(userStarredMessagesRef, (querySnapshot) => {
+			const starredMessages = querySnapshot.val() ?? {};
+			// Save starred messages data to redux messages store
+			dispatch(setStarredMessages({ starredMessages }));
 		});
 
 		return () => {

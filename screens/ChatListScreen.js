@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Button, FlatList } from 'react-native';
 import { HeaderButtons, Item } from 'react-navigation-header-buttons';
 import CustomHeaderButton from '../components/CustomHeaderButton';
-import { useSelector } from 'react-redux';
+import { shallowEqual, useSelector } from 'react-redux';
 import PageContainer from '../components/PageContainer';
 import PageTitle from '../components/PageTitle';
 import DataItem from '../components/DataItem';
@@ -22,7 +22,7 @@ const ChatListScreen = (props) => {
 		return Object.values(chatsData).sort((a, b) => {
 			return new Date(b.updatedAt) - new Date(a.updatedAt);
 		});
-	});
+	}, shallowEqual);
 
 	// Add new chat button to header
 	useEffect(() => {
@@ -77,7 +77,7 @@ const ChatListScreen = (props) => {
 					if (!otherUser) return;
 
 					const title = `${otherUser.firstName} ${otherUser.lastName}`;
-					const subTitle = 'This will be a message..';
+					const subTitle = chatData.latestMessageText || 'New chat';
 					const image = otherUser.profilePicture;
 
 					return (
