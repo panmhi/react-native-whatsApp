@@ -28,6 +28,8 @@ const ProfileImage = (props) => {
 	const [isLoading, setIsLoading] = useState(false);
 
 	const showEditButton = props.showEditButton && props.showEditButton === true;
+	const showRemoveButton =
+		props.showRemoveButton && props.showRemoveButton === true;
 
 	const userId = props.userId;
 
@@ -62,10 +64,10 @@ const ProfileImage = (props) => {
 
 	// Clickable if showEditButton is true
 	// NOT TYPE SAFE: View component doesn't have onPress prop
-	const Container = showEditButton ? TouchableOpacity : View;
+	const Container = props.onPress || showEditButton ? TouchableOpacity : View;
 
 	return (
-		<Container onPress={pickImage}>
+		<Container style={props.style} onPress={props.onPress || pickImage}>
 			{isLoading ? (
 				<View
 					height={props.size}
@@ -89,6 +91,12 @@ const ProfileImage = (props) => {
 					<FontAwesome name='pencil' size={15} color='black' />
 				</View>
 			)}
+
+			{showRemoveButton && !isLoading && (
+				<View style={styles.removeIconContainer}>
+					<FontAwesome name='close' size={15} color='black' />
+				</View>
+			)}
 		</Container>
 	);
 };
@@ -110,6 +118,14 @@ const styles = StyleSheet.create({
 	loadingContainer: {
 		justifyContent: 'center',
 		alignItems: 'center',
+	},
+	removeIconContainer: {
+		position: 'absolute',
+		bottom: -3,
+		right: -3,
+		backgroundColor: colors.lightGrey,
+		borderRadius: 20,
+		padding: 3,
 	},
 });
 

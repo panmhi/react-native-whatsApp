@@ -1,15 +1,24 @@
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, Button, FlatList } from 'react-native';
+import {
+	View,
+	Text,
+	StyleSheet,
+	FlatList,
+	TouchableOpacity,
+} from 'react-native';
 import { HeaderButtons, Item } from 'react-navigation-header-buttons';
 import CustomHeaderButton from '../components/CustomHeaderButton';
 import { shallowEqual, useSelector } from 'react-redux';
 import PageContainer from '../components/PageContainer';
 import PageTitle from '../components/PageTitle';
 import DataItem from '../components/DataItem';
+import colors from '../constants/colors';
 
 const ChatListScreen = (props) => {
 	// Receive selectedUserId from props when navigating from NewChatScreen
 	const selectedUser = props.route?.params?.selectedUserId;
+	const selectedUserList = props.route?.params?.selectedUsers;
+	const chatName = props.route?.params?.chatName;
 
 	// Get the logged in userData from redux store
 	const userData = useSelector((state) => state.auth.userData);
@@ -43,18 +52,37 @@ const ChatListScreen = (props) => {
 
 	// Navigate to ChatScreen if there is a selectedUser
 	useEffect(() => {
-		if (!selectedUser) {
+		if (!selectedUser && !selectedUserList) {
 			return;
 		}
 
-		// selectedUser: the user id to talk to
-		// userData.userId: the user id of the logged in user
-		const chatUsers = [selectedUser, userData.userId];
+		let chatData;
+		let navigationProps;
 
-		// props.newChatData = { users: [id1, id2]}
-		const navigationProps = {
-			newChatData: { users: chatUsers },
-		};
+		// If 1:1 chat, find the chat data
+		if (selectedUser) {
+			chatData = userChats.find(
+				(cd) => !cd.isGroupChat && cd.users.includes(selectedUser)
+			);
+		}
+
+		if (chatData) {
+			navigationProps = { chatId: chatData.key }; // Get chat id
+		} else {
+			// If group chat or no chat data found, get an array of chat users id
+			const chatUsers = selectedUserList || [selectedUser];
+			if (!chatUsers.includes(userData.userId)) {
+				chatUsers.push(userData.userId);
+			}
+
+			navigationProps = {
+				newChatData: {
+					users: chatUsers,
+					isGroupChat: selectedUserList !== undefined,
+					chatName, // Undefiend when it is 1:1 chat
+				},
+			};
+		}
 
 		props.navigation.navigate('ChatScreen', navigationProps);
 	}, [props.route?.params]);
@@ -62,23 +90,40 @@ const ChatListScreen = (props) => {
 	return (
 		<PageContainer>
 			<PageTitle text='Chats' />
+			<View>
+				<TouchableOpacity
+					onPress={() =>
+						props.navigation.navigate('NewChat', { isGroupChat: true })
+					}
+				>
+					<Text style={styles.newGroupText}>New Group</Text>
+				</TouchableOpacity>
+			</View>
 
 			<FlatList
 				data={userChats}
 				renderItem={(itemData) => {
 					const chatData = itemData.item;
 					const chatId = chatData.key;
+					const isGroupChat = chatData.isGroupChat;
 
-					const otherUserId = chatData.users.find(
-						(uid) => uid !== userData.userId
-					);
-					const otherUser = storedUsers[otherUserId];
-
-					if (!otherUser) return;
-
-					const title = `${otherUser.firstName} ${otherUser.lastName}`;
+					let title = '';
 					const subTitle = chatData.latestMessageText || 'New chat';
-					const image = otherUser.profilePicture;
+					let image = '';
+
+					if (isGroupChat) {
+						title = chatData.chatName;
+					} else {
+						const otherUserId = chatData.users.find(
+							(uid) => uid !== userData.userId
+						);
+						const otherUser = storedUsers[otherUserId];
+
+						if (!otherUser) return;
+
+						title = `${otherUser.firstName} ${otherUser.lastName}`;
+						image = otherUser.profilePicture;
+					}
 
 					return (
 						<DataItem
@@ -101,6 +146,11 @@ const styles = StyleSheet.create({
 		flex: 1,
 		alignItems: 'center',
 		justifyContent: 'center',
+	},
+	newGroupText: {
+		color: colors.blue,
+		fontSize: 17,
+		marginBottom: 5,
 	},
 });
 

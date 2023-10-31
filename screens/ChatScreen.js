@@ -99,6 +99,8 @@ const ChatScreen = (props) => {
 		);
 	};
 
+	const title = chatData.chatName ?? getChatTitleFromName();
+
 	// Store chat messages in the database
 	const sendMessage = useCallback(async () => {
 		try {
@@ -110,7 +112,7 @@ const ChatScreen = (props) => {
 				setChatId(id);
 			}
 			await sendTextMessage(
-				chatId,
+				id,
 				userData.userId,
 				messageText,
 				replyingTo && replyingTo.key
@@ -179,7 +181,7 @@ const ChatScreen = (props) => {
 	// Display the other user's name to the header
 	useEffect(() => {
 		props.navigation.setOptions({
-			headerTitle: getChatTitleFromName(),
+			headerTitle: title,
 		});
 		setChatUsers(chatData.users); // TODO -> BUG
 	}, [chatUsers]);
@@ -222,6 +224,10 @@ const ChatScreen = (props) => {
 										? 'myMessage'
 										: 'theirMessage';
 
+									const sender = message.sentBy && storedUsers[message.sentBy];
+									const name =
+										sender && `${sender.firstName} ${sender.lastName}`;
+
 									return (
 										<Bubble
 											type={messageType}
@@ -230,6 +236,9 @@ const ChatScreen = (props) => {
 											userId={userData.userId}
 											chatId={chatId}
 											date={message.sentAt}
+											name={
+												!chatData.isGroupChat || isOwnMessage ? undefined : name
+											}
 											setReply={() => setReplyingTo(message)}
 											replyingTo={
 												message.replyTo &&

@@ -73,7 +73,7 @@ const Bubble = (props) => {
 
 	let Container = View;
 	let isUserMessage = false;
-	const dateString = formatAmPm(date);
+	const dateString = date && formatAmPm(date);
 
 	switch (type) {
 		case 'system':
