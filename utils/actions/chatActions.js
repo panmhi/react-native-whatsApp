@@ -62,17 +62,25 @@ export const createChat = async (loggedInUserId, chatData) => {
 
 // Add new message to messages database
 // Update chat updated time and latestMessageText in the chats database
-export const sendTextMessage = async (chatId, senderId, messageText) => {
+const sendMessage = async (
+	chatId,
+	senderId,
+	messageText,
+	imageUrl,
+	replyTo
+) => {
 	const app = getFirebaseApp();
 	const dbRef = ref(getDatabase());
 	const messagesRef = child(dbRef, `messages/${chatId}`);
 	/**
 	 * 	messages: {
 	 * 		[chatId]: {
-	 * 			[key]: {
+	 * 			[messageId]: {
 	 *  			sentBy,
 	 * 				sentAt,
-	 * 				text
+	 * 				text,
+	 * 				replyTo: [messageId]
+	 * 				imageUrl
 	 * 			}
 	 * 		}
 	 * 	}
@@ -82,6 +90,15 @@ export const sendTextMessage = async (chatId, senderId, messageText) => {
 		sentAt: new Date().toISOString(),
 		text: messageText,
 	};
+
+	if (replyTo) {
+		messageData.replyTo = replyTo;
+	}
+
+	if (imageUrl) {
+		messageData.imageUrl = imageUrl;
+	}
+
 	// Add message to the messages database
 	await push(messagesRef, messageData);
 
@@ -92,6 +109,19 @@ export const sendTextMessage = async (chatId, senderId, messageText) => {
 		updatedAt: new Date().toISOString(),
 		latestMessageText: messageText,
 	});
+};
+
+export const sendTextMessage = async (
+	chatId,
+	senderId,
+	messageText,
+	replyTo
+) => {
+	await sendMessage(chatId, senderId, messageText, null, replyTo);
+};
+
+export const sendImage = async (chatId, senderId, imageUrl, replyTo) => {
+	await sendMessage(chatId, senderId, 'Image', imageUrl, replyTo);
 };
 
 // Add or remove starred message in userStarredMessages database

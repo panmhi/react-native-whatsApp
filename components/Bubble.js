@@ -1,5 +1,11 @@
 import React, { useRef } from 'react';
-import { StyleSheet, Text, TouchableWithoutFeedback, View } from 'react-native';
+import {
+	StyleSheet,
+	Text,
+	TouchableWithoutFeedback,
+	View,
+	Image,
+} from 'react-native';
 import colors from '../constants/colors';
 import {
 	Menu,
@@ -38,8 +44,20 @@ const MenuItem = (props) => {
 };
 
 const Bubble = (props) => {
-	const { text, type, messageId, chatId, userId, date } = props;
+	const {
+		text,
+		type,
+		messageId,
+		chatId,
+		userId,
+		date,
+		setReply,
+		replyingTo,
+		name,
+		imageUrl,
+	} = props;
 
+	const storedUsers = useSelector((state) => state.users.storedUsers);
 	let starredMessages = useSelector(
 		(state) => state.messages.starredMessages[chatId]
 	);
@@ -82,6 +100,9 @@ const Bubble = (props) => {
 			Container = TouchableWithoutFeedback;
 			isUserMessage = true;
 			break;
+		case 'reply':
+			bubbleStyle.backgroundColor = '#F2F2F2';
+			break;
 		default:
 			break;
 	}
@@ -95,6 +116,7 @@ const Bubble = (props) => {
 	};
 
 	const isStarred = isUserMessage && starredMessages[messageId] !== undefined;
+	const replyingToUser = replyingTo && storedUsers[replyingTo.sentBy];
 
 	return (
 		<View style={wrapperStyle}>
@@ -105,7 +127,25 @@ const Bubble = (props) => {
 				style={{ width: '100%' }}
 			>
 				<View style={bubbleStyle}>
-					<Text style={textStyle}>{text}</Text>
+					{name && <Text style={styles.name}>{name}</Text>}
+
+					{replyingToUser && (
+						<Bubble
+							type='reply'
+							text={replyingTo.text}
+							name={`${replyingToUser.firstName} ${replyingToUser.lastName}`}
+							date={replyingTo.sentAt}
+						/>
+					)}
+
+					{/* Show text message */}
+					{!imageUrl && <Text style={textStyle}>{text}</Text>}
+
+					{/* Show image message */}
+					{imageUrl && (
+						<Image source={{ uri: imageUrl }} style={styles.image} />
+					)}
+
 					{dateString && (
 						<View style={styles.timeContainer}>
 							{isStarred && (
@@ -132,6 +172,11 @@ const Bubble = (props) => {
 								icon={isStarred ? 'star-o' : 'star'}
 								iconPack={FontAwesome}
 								onSelect={() => starMessage(messageId, chatId, userId)}
+							/>
+							<MenuItem
+								text='Reply'
+								icon='arrow-left-circle'
+								onSelect={setReply}
 							/>
 						</MenuOptions>
 					</Menu>
@@ -177,6 +222,15 @@ const styles = StyleSheet.create({
 		letterSpacing: 0.3,
 		color: colors.grey,
 		fontSize: 12,
+	},
+	name: {
+		fontFamily: 'medium',
+		letterSpacing: 0.3,
+	},
+	image: {
+		width: 300,
+		height: 300,
+		marginBottom: 5,
 	},
 });
 
