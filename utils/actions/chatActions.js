@@ -9,6 +9,7 @@ import {
 	update,
 } from 'firebase/database';
 import { getFirebaseApp } from '../firebaseHelper';
+import { deleteUserChat, getUserChats } from './userActions';
 
 /*
 	userChats: store chat ids for each user. Key is userId.
@@ -79,7 +80,8 @@ const sendMessage = async (
 	senderId,
 	messageText,
 	imageUrl,
-	replyTo
+	replyTo,
+	type
 ) => {
 	const app = getFirebaseApp();
 	const dbRef = ref(getDatabase());
@@ -93,6 +95,7 @@ const sendMessage = async (
 	 * 				text,
 	 * 				replyTo: [messageId]
 	 * 				imageUrl
+	 * 				type
 	 * 			}
 	 * 		}
 	 * 	}
@@ -109,6 +112,10 @@ const sendMessage = async (
 
 	if (imageUrl) {
 		messageData.imageUrl = imageUrl;
+	}
+
+	if (type) {
+		messageData.type = type;
 	}
 
 	// Add message to the messages database
@@ -129,11 +136,15 @@ export const sendTextMessage = async (
 	messageText,
 	replyTo
 ) => {
-	await sendMessage(chatId, senderId, messageText, null, replyTo);
+	await sendMessage(chatId, senderId, messageText, null, replyTo, null);
+};
+
+export const sendInfoMessage = async (chatId, senderId, messageText) => {
+	await sendMessage(chatId, senderId, messageText, null, null, 'info');
 };
 
 export const sendImage = async (chatId, senderId, imageUrl, replyTo) => {
-	await sendMessage(chatId, senderId, 'Image', imageUrl, replyTo);
+	await sendMessage(chatId, senderId, 'Image', imageUrl, replyTo, null);
 };
 
 // Add or remove starred message in userStarredMessages database
@@ -164,4 +175,36 @@ export const starMessage = async (messageId, chatId, userId) => {
 	} catch (error) {
 		console.log(error);
 	}
+};
+
+// Remove user from a group chat: update chats, userChats and messages database
+export const removeUserFromChat = async (
+	userLoggedInData,
+	userToRemoveData,
+	chatData
+) => {
+	const userToRemoveId = userToRemoveData.userId;
+	const newUsers = chatData.users.filter((uid) => uid !== userToRemoveId);
+	await updateChatData(chatData.key, userLoggedInData.userId, {
+		users: newUsers,
+	});
+
+	const userChats = await getUserChats(userToRemoveId);
+
+	for (const key in userChats) {
+		const currentChatId = userChats[key];
+
+		if (currentChatId === chatData.key) {
+			// Chat will be removed from the removed user's userChats data
+			await deleteUserChat(userToRemoveId, key);
+			break;
+		}
+	}
+
+	const messageText =
+		userLoggedInData.userId === userToRemoveData.userId
+			? `${userLoggedInData.firstName} left the chat`
+			: `${userLoggedInData.firstName} removed ${userToRemoveData.firstName} from the chat`;
+
+	await sendInfoMessage(chatData.key, userLoggedInData.userId, messageText);
 };

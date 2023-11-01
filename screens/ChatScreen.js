@@ -89,7 +89,7 @@ const ChatScreen = (props) => {
 
 	// newChatData: { users: [userId1, userId2] }
 	const chatData =
-		(chatId && storedChats[chatId]) || props.route?.params?.newChatData;
+		(chatId && storedChats[chatId]) || props.route?.params?.newChatData || {};
 
 	// Get the other user's name
 	const getChatTitleFromName = () => {
@@ -100,8 +100,6 @@ const ChatScreen = (props) => {
 			otherUserData && `${otherUserData.firstName} ${otherUserData.lastName}`
 		);
 	};
-
-	const title = chatData.chatName ?? getChatTitleFromName();
 
 	// Store chat messages in the database
 	const sendMessage = useCallback(async () => {
@@ -182,8 +180,10 @@ const ChatScreen = (props) => {
 
 	// Display the other user's name to the header
 	useEffect(() => {
+		if (!chatData) return;
+
 		props.navigation.setOptions({
-			headerTitle: title,
+			headerTitle: chatData.chatName ?? getChatTitleFromName(),
 			headerRight: () => {
 				return (
 					<HeaderButtons HeaderButtonComponent={CustomHeaderButton}>
@@ -205,7 +205,7 @@ const ChatScreen = (props) => {
 			},
 		});
 		setChatUsers(chatData.users); // TODO -> BUG
-	}, [chatUsers, title]);
+	}, [chatUsers]);
 
 	return (
 		<SafeAreaView edges={['right', 'bottom', 'left']} style={styles.container}>
@@ -241,9 +241,14 @@ const ChatScreen = (props) => {
 
 									const isOwnMessage = message.sentBy === userData.userId;
 
-									const messageType = isOwnMessage
-										? 'myMessage'
-										: 'theirMessage';
+									let messageType;
+									if (message.type && message.type === 'info') {
+										messageType = 'info';
+									} else if (isOwnMessage) {
+										messageType = 'myMessage';
+									} else {
+										messageType = 'theirMessage';
+									}
 
 									const sender = message.sentBy && storedUsers[message.sentBy];
 									const name =
