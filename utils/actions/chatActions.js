@@ -10,6 +10,7 @@ import {
 } from 'firebase/database';
 import { getFirebaseApp } from '../firebaseHelper';
 import { addUserChat, deleteUserChat, getUserChats } from './userActions';
+import { getUserPushTokens } from './authActions';
 
 /*
 	userChats: store chat ids for each user. Key is userId.
@@ -42,7 +43,8 @@ export const createChat = async (loggedInUserId, chatData) => {
             }
         }
     */
-	const newChat = await push(child(dbRef, 'chats'), newChatData);
+	const chatsRef = child(dbRef, 'chats');
+	const newChat = await push(chatsRef, newChatData);
 
 	/*
         userChats: {
@@ -132,19 +134,55 @@ const sendMessage = async (
 
 export const sendTextMessage = async (
 	chatId,
-	senderId,
+	senderData,
 	messageText,
-	replyTo
+	replyTo,
+	chatUsers
 ) => {
-	await sendMessage(chatId, senderId, messageText, null, replyTo, null);
+	await sendMessage(
+		chatId,
+		senderData.userId,
+		messageText,
+		null,
+		replyTo,
+		null
+	);
+	const otherUsers = chatUsers.filter((uid) => uid !== senderData.userId);
+	await sendPushNotificationForUsers(
+		otherUsers,
+		`${senderData.firstName} ${senderData.lastName}`,
+		messageText,
+		chatId
+	);
 };
 
 export const sendInfoMessage = async (chatId, senderId, messageText) => {
 	await sendMessage(chatId, senderId, messageText, null, null, 'info');
 };
 
-export const sendImage = async (chatId, senderId, imageUrl, replyTo) => {
-	await sendMessage(chatId, senderId, 'Image', imageUrl, replyTo, null);
+export const sendImage = async (
+	chatId,
+	senderData,
+	imageUrl,
+	replyTo,
+	chatUsers
+) => {
+	await sendMessage(
+		chatId,
+		senderData.userId,
+		'Image',
+		imageUrl,
+		replyTo,
+		null
+	);
+
+	const otherUsers = chatUsers.filter((uid) => uid !== senderData.userId);
+	await sendPushNotificationForUsers(
+		otherUsers,
+		`${senderData.firstName} ${senderData.lastName}`,
+		`${senderData.firstName} sent an image`,
+		chatId
+	);
 };
 
 // Add or remove starred message in userStarredMessages database
@@ -246,4 +284,28 @@ export const addUsersToChat = async (
 		newUsers.length > 1 ? `and ${newUsers.length - 1} others ` : '';
 	const messageText = `${userLoggedInData.firstName} ${userLoggedInData.lastName} added ${userAddedName} ${moreUsersMessage}to the chat`;
 	await sendInfoMessage(chatData.key, userLoggedInData.userId, messageText);
+};
+
+const sendPushNotificationForUsers = (chatUsers, title, body, chatId) => {
+	chatUsers.forEach(async (uid) => {
+		console.log('test');
+		const tokens = await getUserPushTokens(uid);
+
+		for (const key in tokens) {
+			const token = tokens[key];
+
+			await fetch('https://exp.host/--/api/v2/push/send', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					to: token,
+					title,
+					body,
+					data: { chatId },
+				}),
+			});
+		}
+	});
 };

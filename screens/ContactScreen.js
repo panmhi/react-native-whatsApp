@@ -28,7 +28,17 @@ const ContactScreen = (props) => {
 
 			await removeUserFromChat(userData, currentUser, chatData);
 
-			props.navigation.goBack();
+			const updatedChatUsers = chatData.users.filter(
+				(id) => id !== currentUser.userId
+			);
+
+			// props.navigation.goBack();
+			props.navigation.navigate('DataList', {
+				title: 'Participants',
+				data: updatedChatUsers,
+				type: 'users',
+				chatId,
+			});
 		} catch (error) {
 			console.log(error);
 		} finally {

@@ -108,14 +108,18 @@ const ChatScreen = (props) => {
 			if (!id) {
 				// No chat Id. Create the chat
 				// newChatData: { users: [userId1, userId2] }
+
 				id = await createChat(userData.userId, props.route.params.newChatData);
+				console.log('id: ', id);
+
 				setChatId(id);
 			}
 			await sendTextMessage(
 				id,
-				userData.userId,
+				userData,
 				messageText,
-				replyingTo && replyingTo.key
+				replyingTo && replyingTo.key,
+				chatUsers
 			);
 			setMessageText('');
 			setReplyingTo(null);
@@ -166,10 +170,12 @@ const ChatScreen = (props) => {
 			// Add image message to messages database
 			await sendImage(
 				id,
-				userData.userId,
+				userData,
 				uploadUrl,
-				replyingTo && replyingTo.key
+				replyingTo && replyingTo.key,
+				chatUsers
 			);
+
 			setReplyingTo(null);
 
 			setTimeout(() => setTempImageUri(''), 500); // Delay to allow the AwesomeAlert component to close

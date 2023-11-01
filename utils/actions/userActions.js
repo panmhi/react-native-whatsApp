@@ -59,7 +59,6 @@ export const addUserChat = async (userId, chatId) => {
 		const app = getFirebaseApp();
 		const dbRef = ref(getDatabase(app));
 		const chatRef = child(dbRef, `userChats/${userId}`);
-
 		await push(chatRef, chatId);
 	} catch (error) {
 		console.log(error);

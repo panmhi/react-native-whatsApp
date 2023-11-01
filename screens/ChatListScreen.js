@@ -74,13 +74,15 @@ const ChatListScreen = (props) => {
 			if (!chatUsers.includes(userData.userId)) {
 				chatUsers.push(userData.userId);
 			}
-
+			const newChatData = {
+				users: chatUsers,
+				isGroupChat: selectedUserList !== undefined,
+			};
+			if (chatName) {
+				newChatData.chatName = chatName;
+			}
 			navigationProps = {
-				newChatData: {
-					users: chatUsers,
-					isGroupChat: selectedUserList !== undefined,
-					chatName, // Undefiend when it is 1:1 chat
-				},
+				newChatData,
 			};
 		}
 
