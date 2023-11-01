@@ -205,7 +205,7 @@ const ChatScreen = (props) => {
 			},
 		});
 		setChatUsers(chatData.users); // TODO -> BUG
-	}, [chatUsers]);
+	}, [chatUsers, chatId]);
 
 	return (
 		<SafeAreaView edges={['right', 'bottom', 'left']} style={styles.container}>
